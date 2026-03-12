@@ -1,0 +1,8 @@
+---
+- name: Deploy Laravel
+  hosts: development
+  tasks:
+    - name: Pull repository
+      git:
+        repo: https://github.com/username/laravel-project.git
+        dest: /var/www/laravel
