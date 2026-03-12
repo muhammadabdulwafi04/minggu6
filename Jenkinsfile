@@ -1,15 +1,14 @@
 node {
+
     checkout scm
+    env.PROD_HOST = "172.27.255.237"
 
     stage("Build") {
         docker.image('composer:2').inside('-u root') {
+            sh 'git config --global --add safe.directory /var/jenkins_home/workspace/jenkins-laravel'
             sh 'composer install'
         }
     }
-
-environment {
-    PROD_HOST = "172.27.255.237"
-}
 
     stage("Testing") {
         docker.image('ubuntu').inside('-u root') {
@@ -17,26 +16,23 @@ environment {
         }
     }
 
-// deploy env prod
-stage('Deploy Production') {
-    steps {
-        script {
-            docker.image('agung3wi/alpine-rsync:1.1').inside('-u root') {
-                sshagent (credentials: ['ssh-prod']) {
+    stage('Deploy Production') {
+        docker.image('agung3wi/alpine-rsync:1.1').inside('-u root') {
 
-                    sh 'mkdir -p ~/.ssh'
-                    sh 'ssh-keyscan -H $PROD_HOST >> ~/.ssh/known_hosts'
+            sshagent(['ssh-prod']) {
 
-                    sh '''
-                    rsync -rav --delete ./ \
-                    abdulwafi@$PROD_HOST:/home/ubuntu/prod.kelasdevops.xyz/ \
-                    --exclude=.env \
-                    --exclude=storage \
-                    --exclude=.git
-                    '''
-                }
+                sh '''
+                mkdir -p ~/.ssh
+                ssh-keyscan -H $PROD_HOST >> ~/.ssh/known_hosts
+
+                rsync -rav --delete ./ \
+                abdulwafi@$PROD_HOST:/home/ubuntu/prod.kelasdevops.xyz/ \
+                --exclude=.env \
+                --exclude=storage \
+                --exclude=.git
+                '''
             }
+
         }
     }
-}
 }
